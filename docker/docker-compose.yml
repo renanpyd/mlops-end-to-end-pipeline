@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  # Microsserviço assíncrono de inferência construído com FastAPI
+  mlops-inference-serving:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.serving
+    container_name: enterprise_mlops_inference_api
+    ports:
+      - "8080:8080"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/app
+      - MLFLOW_TRACKING_URI=http://mlflow-artifacts-server:5000
+    depends_on:
+      - mlflow-artifacts-server
+
+  # Servidor Centralizado de Governança de Experimentos e Model Registry (MLflow)
+  mlflow-artifacts-server:
+    image: ghcr.io/mlflow/mlflow:latest
+    container_name: enterprise_mlflow_registry
+    ports:
+      - "5000:5000"
+    command: mlflow server --host 0.0.0.0 --port 5000 --backend-store-uri sqlite:///mlflow.db --default-artifact-root /app/artifacts
+    volumes:
+      - mlflow_metadata_store:/app
